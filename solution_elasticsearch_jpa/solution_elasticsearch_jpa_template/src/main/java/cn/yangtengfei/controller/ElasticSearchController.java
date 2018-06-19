@@ -7,10 +7,17 @@ import org.elasticsearch.index.query.MatchQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.elasticsearch.core.ElasticsearchTemplate;
+import org.springframework.data.elasticsearch.core.query.Criteria;
+import org.springframework.data.elasticsearch.core.query.CriteriaQuery;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -20,6 +27,9 @@ public class ElasticSearchController {
       
     @Autowired
     private EmployeeRepository employeeRepository;
+
+    @Resource(name = "employeeElasticsearchTemplate")
+    private ElasticsearchTemplate elasticsearchTemplate;
       
     //增加  
     @RequestMapping("/add")  
@@ -85,15 +95,25 @@ public class ElasticSearchController {
         //System.err.println(new Gson().toJson(accountInfo));
         //MatchQueryBuilder matchQueryBuilder = new MatchQueryBuilder("firstName", "的");
 
-        DisMaxQueryBuilder disMaxQueryBuilder = QueryBuilders.disMaxQuery().add(QueryBuilders.termQuery("firstName", firstname));
+        /*DisMaxQueryBuilder disMaxQueryBuilder = QueryBuilders.disMaxQuery().add(QueryBuilders.termQuery("firstName", firstname));
         Iterable<Employee> search = employeeRepository.search(disMaxQueryBuilder);
+
+
         List<Employee> accountInfo = new ArrayList<>();
         search.forEach(resource -> {
             System.out.println(resource.toString());
             accountInfo.add(resource);
         });
 
-        return accountInfo;
+        return accountInfo;*/
+
+
+
+        CriteriaQuery criteriaQuery = new CriteriaQuery(new Criteria()
+                .and(new Criteria("firstName").is(firstname))).setPageable(new PageRequest(0, 10));
+                //.addSort(new Sort(new Sort.Order(Sort.Direction.DESC, "segEndlineNo")));
+        Page<Employee> pages = elasticsearchTemplate.queryForPage(criteriaQuery, Employee.class);
+        return pages.getContent();
     }
 
 }
